@@ -18,23 +18,139 @@ SpreeVariantOption.OptionValuesHandler.prototype.init = function() {
   this.disableCartInputFields(true);
   this.originalCombination = original_combination;
   this.possibleCombinationsArray = $.extend(true, [], this.originalCombination);
+  console.log({init:this.possibleCombinationsArray});
+  this.baseTabHash = {initial:this.possibleCombinationsArray, after:[]}
+  this.tabHash = {}
   this.onButtonClick();
 };
 
+SpreeVariantOption.OptionValuesHandler.prototype.updateOtherAvailability = function(otherOptions,level) {
+  /*
+   * disable all first
+   */
+  let allOptions = this.originalCombination.map(el=>Object.keys(el)).flat();
+  let setAllOptions = new Set(allOptions);
+
+  setAllOptions.forEach(typeId=>{
+    if(parseInt(typeId) > 1){
+      let optionTypeValues = $(`[data-hook='option-value'][data-type-id=${typeId}]`);
+      $.each(optionTypeValues,(index,el)=>{
+        if($(el).data('level')>level){//only disable on upcoming tabs
+          if($(el).is('input')){
+            $(el).attr('disabled',true);
+          }else{
+            optionTypeValues.addClass('disabled');
+            optionTypeValues.html('X');
+          }
+        }
+
+      })
+    }
+  });
+
+  /*
+   * enable what should be open
+   */
+  otherOptions.forEach((el)=>{
+    Object.keys(el).forEach((k)=>{
+      let optionValuesFound = $(`[data-hook='option-value'][data-type-id=${k}][data-value-id=${el[k]}]`);
+
+      $.each(optionValuesFound,(index,el)=>{
+        if($(el).data('level')>level) {//only disable on upcoming tabs
+          if ($(el).is('input')) {
+            $(el).attr('disabled', false);
+          } else {
+            optionValuesFound.removeClass('disabled');
+            optionValuesFound.html('');
+          }
+        }
+      })
+    })
+  })
+};
+
+SpreeVariantOption.OptionValuesHandler.prototype.updateTabs = function(){
+
+};
+
+
+SpreeVariantOption.OptionValuesHandler.prototype.getTabSelectedValue = function(tabNo){
+  let keyValue={};
+  this.optionsButton.filter('.selected').each(function() {
+    if($(this).data('level') === tabNo) {
+      keyValue = {key:$(this).data('type-id'),value:$(this).data('value-id')}
+    }
+  });
+  return keyValue;
+}
+
+SpreeVariantOption.OptionValuesHandler.prototype.manageTabs = function(level,clickedOptionValue){
+  var _this = this;
+  let keyValue ;
+
+  if(parseInt(level)===1 || !this.tabHash){
+    keyValue = this.getTabSelectedValue(1);
+    reducedArray = _this.findAndReduce(_this.possibleCombinationsArray, null, keyValue);
+
+    this.tabHash = {
+      initial:[..._this.possibleCombinationsArray],
+      after:reducedArray,
+    }
+  }else{
+    let iteratedLevel = 1;
+    reducedArray = this.tabHash.initial;
+    while (iteratedLevel <= level) {
+      keyValue = this.getTabSelectedValue(iteratedLevel);
+      reducedArray = _this.findAndReduce(reducedArray, null,keyValue);
+      iteratedLevel++;
+    }
+  }
+
+  console.log({reducedArray});
+  _this.updateOtherAvailability(reducedArray,level);
+
+  // $('.variant-options').on('click',function(e){
+  //   var $this = $(this);
+  //   let level = $this.data('step');
+  //   let reducedArray = [];
+  //   debugger
+  //   if(parseInt(level)===0 || !tabHash){
+  //     reducedArray = _this.findAndReduce(_this.possibleCombinationsArray, $this);
+  //     tabHash = {
+  //       initial:[..._this.possibleCombinationsArray],
+  //       after:reducedArray
+  //     }
+  //   }else{
+  //     let iteratedLevel = 0;
+  //     reducedArray = tabHash.initial;
+  //     while (iteratedLevel < level) {
+  //       reducedArray = _this.findAndReduce(reducedArray, $this);
+  //       iteratedLevel++;
+  //     }
+  //   }
+  //
+  //   _this.updateOtherAvailability(reducedArray);
+  // })
+}
+
 SpreeVariantOption.OptionValuesHandler.prototype.onButtonClick = function() {
   var _this = this;
+
   this.optionsButton.on("click", function() {
     var $this = $(this);
-    _this.possibleCombinationsArray = _this.findAndReduce(_this.possibleCombinationsArray, $this);
+    $this.closest('.js-tab-content').find('.option-value').removeClass('selected');
     $this.addClass("selected");
     _this.disableCartInputFields(true);
-    if(_this.possibleCombinationsArray.length === 0){
-      _this.noVariantsPresent($this);
-    } else if(_this.containsEmptyHash()) {
-      _this.setVariantSelected();
-    } else if (_this.possibleCombinationsArray.length === 1) {
-      _this.findOptionButton(_this.possibleCombinationsArray[0]).trigger('click');
-    }
+    //alert($this.data('level'));
+    _this.manageTabs($this.data('level'),$this);
+    _this.setVariantSelected();
+    // if(_this.possibleCombinationsArray.length === 0){
+    //   _this.noVariantsPresent($this);
+    // } else if(_this.containsEmptyHash()) {
+    //   _this.setVariantSelected();
+    // } else if (_this.possibleCombinationsArray.length === 1) {
+    //   _this.findOptionButton(_this.possibleCombinationsArray[0]).trigger('click');
+    // }
   });
 };
 
@@ -47,8 +163,12 @@ SpreeVariantOption.OptionValuesHandler.prototype.noVariantsPresent = function(op
 SpreeVariantOption.OptionValuesHandler.prototype.setVariantSelected = function() {
   this.disableCartInputFields(false);
   var variant = this.findVariantForAllSelected();
-  this.setVariantId(variant);
-  this.showVariantImages(variant.variant_id);
+  console.log({variant});
+  if(!!variant){
+    this.setVariantId(variant);
+    this.showVariantImages(variant.variant_id);
+  }
+
 };
 
 SpreeVariantOption.OptionValuesHandler.prototype.resetAllOtherButtons = function(justClicked){
@@ -58,7 +178,9 @@ SpreeVariantOption.OptionValuesHandler.prototype.resetAllOtherButtons = function
 };
 
 SpreeVariantOption.OptionValuesHandler.prototype.findVariantForAllSelected = function(){
-  var conditions = {};
+  let conditions = {};
+  let variant = null;
+
   this.optionsButton.filter('.selected').each(function() {
     conditions[$(this).data('typeId')] = $(this).data('valueId');
   });
@@ -92,11 +214,20 @@ SpreeVariantOption.OptionValuesHandler.prototype.containsEmptyHash = function() 
   }
 };
 
-SpreeVariantOption.OptionValuesHandler.prototype.findAndReduce = function(availableOptions, justClickedButton) {
-  var key = justClickedButton.data("typeId"),
-      value = justClickedButton.data("valueId");
-  return availableOptions.filter(function (item) {
-    if (item[key] == value) {
+SpreeVariantOption.OptionValuesHandler.prototype.findAndReduce = function(availableOptions, justClickedButton, existingPair) {
+  let options = $.extend(true, [], availableOptions);
+  let key,value;
+
+  if(existingPair){
+    key = existingPair.key;
+    value = existingPair.value;
+  }else{
+    key = justClickedButton.data("type-id")
+    value = justClickedButton.data("value-id");
+  }
+
+  return options.filter(function (item) {
+    if (item[key] === value) {
       delete item[key];
       return item;
     }
@@ -129,7 +260,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.showVariantImages = function(va
 $(function() {
   if ($("input#variant_present").val() == 'true') {
     (new SpreeVariantOption.OptionValuesHandler({
-      optionsButton: $('a[data-hook=option-value]'),
+      optionsButton: $('[data-hook=option-value]'),
       addToCartButton: $('#add-to-cart-button'),
       priceHeading: $('#product-price [itemprop=price]'),
       quantityField: $('#quantity'),
