@@ -200,6 +200,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.findOptionButton = function(has
 
 SpreeVariantOption.OptionValuesHandler.prototype.setVariantId = function(variant) {
   this.variantField.val(variant.variant_id);
+  this.variantField.trigger('change');
   this.priceHeading.html(variant.variant_price);
   if (!variant.in_stock && !options.allow_select_outofstock) {
     this.optionsButton.filter('.selected').addClass('out-of-stock');
