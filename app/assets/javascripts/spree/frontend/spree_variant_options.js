@@ -127,7 +127,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.manageTabs = function(level,cli
 
   const resetAllTabs = (allTabs)=>{
 
-    // $(".label-restriction").html("")
+    $(".label-restriction").html("")
 
     $.each(allTabs,(index,tab)=>{
 
@@ -167,15 +167,23 @@ SpreeVariantOption.OptionValuesHandler.prototype.manageTabs = function(level,cli
 
       $(contentContainer).show();
 
-        const nextTabContentLength = $(contentContainer + " " +".option-value:not(.disabled)").length
+        const nextTabContentLength = $(contentContainer).find('.option-value:not([style*="display: none"])').length
 
-      if ( (nextTabContentLength > 0)  ) {
-        $(contentContainer).show();
-        $("." + nextTabContentContainerId + "-label").html("")
-      } 
-      else {
-        $(contentContainer).hide();
-      }
+        if (nextTabContentLength == 0 )
+        {
+          nextTabIsNil = true
+        }
+
+
+        if ( (nextTabContentLength > 0) && nextTabIsNil == false) {
+
+          $(contentContainer).show();
+          $("." + nextTabContentContainerId + "-label").html("")
+
+        } 
+        else {
+          $(contentContainer).hide();
+        }
       
     });
 
@@ -245,7 +253,9 @@ SpreeVariantOption.OptionValuesHandler.prototype.setVariantSelected = function()
     this.setVariantId(variant);
     this.showVariantImages(variant.variant_id);
   }
-
+  else {
+    this.variantField.val("");
+  }
 };
 
 SpreeVariantOption.OptionValuesHandler.prototype.resetAllOtherButtons = function(justClicked){
