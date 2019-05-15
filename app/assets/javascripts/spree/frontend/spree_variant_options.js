@@ -11,6 +11,7 @@ SpreeVariantOption.OptionValuesHandler = function(selectors) {
   this.variantField = selectors.variantField;
   this.thumbImages = selectors.thumbImages;
   this.variantId = 0;
+  this.allTabs = selectors.allTabs;
   this.variantPrice = 0;
 };
 
@@ -28,6 +29,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.updateOtherAvailability = funct
   /*
    * disable all first
    */
+
   let allOptions = this.originalCombination.map(el=>Object.keys(el)).flat();
   let setAllOptions = new Set(allOptions);
 
@@ -37,10 +39,14 @@ SpreeVariantOption.OptionValuesHandler.prototype.updateOtherAvailability = funct
       $.each(optionTypeValues,(index,el)=>{
         if($(el).data('level')>level){//only disable on upcoming tabs
           if($(el).is('input')){
-            $(el).attr('disabled',true);
+            // $(el).attr('disabled',true);
+            $(el).hide();
+            $(el).closest("li").hide();
+            $(el).closest("li").removeClass("active");
           }else{
             optionTypeValues.addClass('disabled');
             optionTypeValues.html('X');
+            optionTypeValues.hide();
           }
         }
 
@@ -48,20 +54,31 @@ SpreeVariantOption.OptionValuesHandler.prototype.updateOtherAvailability = funct
     }
   });
 
+
   /*
    * enable what should be open
-   */
+  */
+
+  console.log(otherOptions)
+
   otherOptions.forEach((el)=>{
     Object.keys(el).forEach((k)=>{
       let optionValuesFound = $(`[data-hook='option-value'][data-type-id=${k}][data-value-id=${el[k]}]`);
 
       $.each(optionValuesFound,(index,el)=>{
-        if($(el).data('level')>level) {//only disable on upcoming tabs
-          if ($(el).is('input')) {
+        if($(el).data('level') > level) {
+          //only disable on upcoming tabs
+          if ($(el).is('input')) 
+          {
             $(el).attr('disabled', false);
-          } else {
+            $(el).prop("checked", false);
+            $(el).show();
+            $(el).closest("li").show();
+          } 
+          else {
             optionValuesFound.removeClass('disabled');
-            optionValuesFound.html('');
+            optionValuesFound.html('')
+            optionValuesFound.show();
           }
         }
       })
@@ -106,8 +123,68 @@ SpreeVariantOption.OptionValuesHandler.prototype.manageTabs = function(level,cli
     }
   }
 
-  console.log({reducedArray});
   _this.updateOtherAvailability(reducedArray,level);
+
+  const resetAllTabs = (allTabs)=>{
+
+    // $(".label-restriction").html("")
+
+    $.each(allTabs,(index,tab)=>{
+
+
+      console.log({id:$(tab).data('tab-content-area')})
+      const link = $(tab).find('.js-variant-option-type');
+      const contentContainer = $('#' + $(link).data('tab-content-area'));
+      const labelRestriction = $(link).data('restriction-label');
+      const contentContainerName = $(link).data('tab-content-area')
+
+      const step_id = $(link).data('step');
+
+      if (step_id > 0 )
+      {
+        $(contentContainer).after(`<p class="label-restriction ${contentContainerName}-label">${labelRestriction}</p>`);
+        $(contentContainer).hide();
+      }
+      
+    });
+
+  }
+
+
+  const showNextTabContent = (allTabs)=>{
+
+    let nextTabIsNil = false
+
+    $.each(allTabs,(index,tab)=>{
+
+      const link = $(tab).find('.js-variant-option-type');
+      const step_id = $(link).data('step');
+
+      const nextTabIndex = $(".index-"+ (step_id + 1))
+      const nextTabContentSelector = $(nextTabIndex).find('.js-variant-option-type');
+      const nextTabContentContainerId = $(nextTabContentSelector).data('tab-content-area')
+      const contentContainer = '#' + nextTabContentContainerId;
+
+      $(contentContainer).show();
+
+        const nextTabContentLength = $(contentContainer + " " +".option-value:not(.disabled)").length
+
+      if ( (nextTabContentLength > 0)  ) {
+        $(contentContainer).show();
+        $("." + nextTabContentContainerId + "-label").html("")
+      } 
+      else {
+        $(contentContainer).hide();
+      }
+      
+    });
+
+  }
+
+
+  resetAllTabs(this.allTabs);
+  showNextTabContent(this.allTabs);
+
 
   // $('.variant-options').on('click',function(e){
   //   var $this = $(this);
@@ -201,7 +278,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.findOptionButton = function(has
 SpreeVariantOption.OptionValuesHandler.prototype.setVariantId = function(variant) {
   this.variantField.val(variant.variant_id);
   this.variantField.trigger('change');
-  this.priceHeading.html(variant.variant_price);
+  //this.priceHeading.html(variant.variant_price);
   if (!variant.in_stock && !options.allow_select_outofstock) {
     this.optionsButton.filter('.selected').addClass('out-of-stock');
   }
@@ -239,7 +316,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.disableCartInputFields = functi
   this.addToCartButton.prop('disabled', value);
   this.quantityField.prop('disabled', value);
   if(value) {
-    this.priceHeading.html('Select Variant');
+    //this.priceHeading.html('Select Variant');
   }
 };
 
@@ -266,7 +343,8 @@ $(function() {
       priceHeading: $('#product-price [itemprop=price]'),
       quantityField: $('#quantity'),
       variantField: $('input#variant_id'),
-      thumbImages: $('li.vtmb')
+      thumbImages: $('li.vtmb'),
+      allTabs: $('.variant-options')
     })).init();
   }
 });
