@@ -47,6 +47,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.updateOtherAvailability = funct
             optionTypeValues.addClass('disabled');
             optionTypeValues.html('X');
             optionTypeValues.hide();
+            optionTypeValues.closest("li").removeClass("active");
           }
         }
 
@@ -125,12 +126,13 @@ SpreeVariantOption.OptionValuesHandler.prototype.manageTabs = function(level,cli
 
   _this.updateOtherAvailability(reducedArray,level);
 
-  const resetAllTabs = (allTabs)=>{
+  const resetAllTabs = (currentStep,allTabs)=>{
+
+
 
     $(".label-restriction").html("")
 
     $.each(allTabs,(index,tab)=>{
-
 
       console.log({id:$(tab).data('tab-content-area')})
       const link = $(tab).find('.js-variant-option-type');
@@ -140,7 +142,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.manageTabs = function(level,cli
 
       const step_id = $(link).data('step');
 
-      if (step_id > 0 )
+      if ( (step_id > currentStep) && (step_id > 0) )
       {
         $(contentContainer).after(`<p class="label-restriction ${contentContainerName}-label">${labelRestriction}</p>`);
         $(contentContainer).hide();
@@ -152,45 +154,40 @@ SpreeVariantOption.OptionValuesHandler.prototype.manageTabs = function(level,cli
 
 
   const showNextTabContent = (allTabs)=>{
-
+    //only update next tab from active tab
+    let activeTab = $('.variant-options.active');
     let nextTabIsNil = false
 
-    $.each(allTabs,(index,tab)=>{
+    const link = $(activeTab).find('.js-variant-option-type');
+    const step_id = $(link).data('step');
 
-      const link = $(tab).find('.js-variant-option-type');
-      const step_id = $(link).data('step');
+    const nextTabIndex = $(".index-"+ (step_id + 1))
+    const nextTabContentSelector = $(nextTabIndex).find('.js-variant-option-type');
+    const nextTabContentContainerId = $(nextTabContentSelector).data('tab-content-area')
+    const contentContainer = '#' + nextTabContentContainerId;
 
-      const nextTabIndex = $(".index-"+ (step_id + 1))
-      const nextTabContentSelector = $(nextTabIndex).find('.js-variant-option-type');
-      const nextTabContentContainerId = $(nextTabContentSelector).data('tab-content-area')
-      const contentContainer = '#' + nextTabContentContainerId;
+    $(contentContainer).show();
 
+    const nextTabContentLength = $(contentContainer).find('.option-value:not([style*="display: none"])').length
+
+
+    if (nextTabContentLength == 0 )
+    {
+      nextTabIsNil = true
+    }
+
+    if ( (nextTabContentLength > 0) && nextTabIsNil == false) {
       $(contentContainer).show();
-
-        const nextTabContentLength = $(contentContainer).find('.option-value:not([style*="display: none"])').length
-
-        if (nextTabContentLength == 0 )
-        {
-          nextTabIsNil = true
-        }
-
-
-        if ( (nextTabContentLength > 0) && nextTabIsNil == false) {
-
-          $(contentContainer).show();
-          $("." + nextTabContentContainerId + "-label").html("")
-
-        } 
-        else {
-          $(contentContainer).hide();
-        }
+      $("." + nextTabContentContainerId + "-label").html("")
+    } 
+    else {
+      $(contentContainer).hide();
+    }
       
-    });
-
   }
 
 
-  resetAllTabs(this.allTabs);
+  resetAllTabs(level,this.allTabs);
   showNextTabContent(this.allTabs);
 
 
