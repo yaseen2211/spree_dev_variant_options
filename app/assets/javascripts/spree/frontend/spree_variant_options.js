@@ -321,7 +321,7 @@ SpreeVariantOption.OptionValuesHandler.prototype.findAndReduce = function(availa
 
 SpreeVariantOption.OptionValuesHandler.prototype.disableCartInputFields = function(value) {
   this.addToCartButton.prop('disabled', value);
-  this.quantityField.prop('disabled', value);
+  // this.quantityField.prop('disabled', value);
   if(value) {
     //this.priceHeading.html('Select Variant');
   }
