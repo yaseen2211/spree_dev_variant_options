@@ -3,7 +3,7 @@ $:.push File.expand_path("../lib", __FILE__)
 require "spree_variant_options/version"
 
 Gem::Specification.new do |s|
-  s.name        = "spree_variant_options"
+  s.name        = "spree_dev_variant_options"
   s.version     = SpreeVariantOptions::VERSION
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Spencer Steffen"]
